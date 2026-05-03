@@ -86,7 +86,7 @@ export default function ReferralsPage() {
                       <td className="px-5 py-3.5">{statusBadge(i.status)}</td>
                       <td className="px-5 py-3.5">
                         {i.status === 'Joined'
-                          ? <span className="text-[13.5px] font-semibold text-emerald-400">${i.rewardAmount || 0}</span>
+                          ? <span className="text-[13.5px] font-semibold text-emerald-400">${i.amount || 0}</span>
                           : <span className="text-txt-muted">—</span>}
                       </td>
                       <td className="px-5 py-3.5">
