@@ -6,9 +6,9 @@ import api from '@/lib/api';
 import AdminShell from '@/components/AdminShell';
 
 const statConfig = [
-  { key: 'activeMemberships', label: 'Active Members',      icon: Users,         color: '#c9a84c' },
-  { key: 'pendingWallet',     label: 'Pending Redemptions', icon: Wallet,        color: '#60a5fa' },
-  { key: 'todaysBookings',    label: "Today's Bookings",    icon: CalendarCheck, color: '#4ade80' },
+  { key: 'activeMembers',     label: 'Active Members',      icon: Users,         color: '#c9a84c' },
+  { key: 'pendingRedemptions',label: 'Pending Redemptions', icon: Wallet,        color: '#60a5fa' },
+  { key: 'pendingBookings',   label: 'Pending Bookings',    icon: CalendarCheck, color: '#4ade80' },
 ];
 
 export default function AdminDashboard() {
@@ -16,8 +16,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/dashboard/stats')
-      .then(r => setStats(r.data.data))
+    api.get('/users/stats')
+      .then(r => setStats(r.data))
       .catch(() => toast.error('Failed to load stats'))
       .finally(() => setLoading(false));
   }, []);

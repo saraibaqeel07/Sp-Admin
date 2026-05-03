@@ -344,9 +344,6 @@
   .h-16 {
     height: calc(var(--spacing) * 16);
   }
-  .h-\[18px\] {
-    height: 18px;
-  }
   .h-px {
     height: 1px;
   }
@@ -388,9 +385,6 @@
   }
   .w-14 {
     width: calc(var(--spacing) * 14);
-  }
-  .w-\[18px\] {
-    width: 18px;
   }
   .w-\[240px\] {
     width: 240px;
@@ -804,9 +798,6 @@
   }
   .align-middle {
     vertical-align: middle;
-  }
-  .font-mono {
-    font-family: var(--font-mono);
   }
   .text-sm {
     font-size: var(--text-sm);

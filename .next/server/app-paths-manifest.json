@@ -1,8 +1,5 @@
 {
-  "/admin/members/page": "app/admin/members/page.js",
-  "/admin/memberships/page": "app/admin/memberships/page.js",
-  "/admin/referrals/page": "app/admin/referrals/page.js",
-  "/admin/classes/page": "app/admin/classes/page.js",
-  "/admin/class-types/page": "app/admin/class-types/page.js",
-  "/admin/page": "app/admin/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/icon.png/route": "app/icon.png/route.js"
 }
