@@ -1,26 +1,30 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, BookOpen,
   CreditCard, CalendarCheck, Gift, Wallet, UserCheck,
-  Settings, LogOut, Loader2, AlertTriangle,
+  Settings, LogOut, Loader2, AlertTriangle, Award, Layers,
 } from "lucide-react";
 
-const navItems = [
+const allNavItems = [
   { icon: LayoutDashboard, label: "Dashboard",      href: "/admin" },
   { icon: Users,           label: "Members",        href: "/admin/members" },
   { icon: Clock,           label: "Time Slots",     href: "/admin/time-slots" },
   { icon: CalendarDays,    label: "Class Schedule", href: "/admin/classes" },
+  { icon: Layers,          label: "Class Types",    href: "/admin/class-types" },
   { icon: BookOpen,        label: "Bookings",       href: "/admin/bookings" },
   { icon: CreditCard,      label: "Subscriptions",  href: "/admin/memberships" },
   { icon: CalendarCheck,   label: "Events",         href: "/admin/events" },
   { icon: Gift,            label: "Referrals",      href: "/admin/referrals" },
   { icon: Wallet,          label: "Wallet",         href: "/admin/wallet" },
   { icon: UserCheck,       label: "Trainers",       href: "/admin/trainers" },
+  { icon: Award,           label: "Belts",          href: "/admin/belts" },
   { icon: Settings,        label: "Settings",       href: "/admin/settings" },
 ];
+
+const trainerAllowedHrefs = ["/admin", "/admin/members", "/admin/bookings", "/admin/classes"];
 
 function LogoutModal({ onConfirm, onCancel, loading }) {
   return (
@@ -79,6 +83,19 @@ export default function AdminShell({ children }) {
   const router = useRouter();
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("adminUser") || "{}");
+      setUserRole(u?.role || "");
+    } catch { /* ignore */ }
+  }, []);
+
+  const isTrainer = userRole === "TRAINER";
+  const navItems = isTrainer
+    ? allNavItems.filter(item => trainerAllowedHrefs.includes(item.href))
+    : allNavItems;
 
   const handleLogout = async () => {
     setLoggingOut(true);

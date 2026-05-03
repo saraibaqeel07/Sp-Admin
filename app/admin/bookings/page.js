@@ -186,13 +186,13 @@ export default function BookingsPage() {
                       </td>
                       <td className="px-5 py-3.5">{statusBadge(i.status)}</td>
                       <td className="px-5 py-3.5">
-                        <button
+                        {(i.status == 'APPROVED' ||  i.status == 'REJECTED') ? "-" :   <button
                           onClick={() => setDecideBooking(i)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-h text-[#0a0a0a] text-[12px] font-semibold rounded-lg transition-colors"
                         >
                           <ClipboardEdit size={12} />
                           Update Status
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   ))

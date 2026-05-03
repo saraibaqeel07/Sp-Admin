@@ -9,28 +9,28 @@ export default function TimeslotsPage() {
         title="Timeslot Management"
         endpoint="timeslots"
         fields={[
-          { name: "name", label: "Slot Name (e.g., Morning)" },
-          { name: "startTime", label: "Start Time", type: "time" },
-          { 
-            name: "startPeriod", 
-            label: "Start AM/PM", 
-            type: "select", 
+          { name: "name", label: "Slot Name (e.g., Morning)", required: true },
+          { name: "startTime", label: "Start Time", type: "time", required: true },
+          {
+            name: "startPeriod",
+            label: "Start AM/PM",
+            type: "select",
+            required: true,
             options: [
-              { label: "None", value: "" },
               { label: "AM", value: "AM" },
               { label: "PM", value: "PM" }
-            ] 
+            ]
           },
-          { name: "endTime", label: "End Time", type: "time" },
-          { 
-            name: "endPeriod", 
-            label: "End AM/PM", 
-            type: "select", 
+          { name: "endTime", label: "End Time", type: "time", required: true },
+          {
+            name: "endPeriod",
+            label: "End AM/PM",
+            type: "select",
+            required: true,
             options: [
-              { label: "None", value: "" },
               { label: "AM", value: "AM" },
               { label: "PM", value: "PM" }
-            ] 
+            ]
           },
         ]}
         columns={[

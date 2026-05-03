@@ -77,7 +77,7 @@ export default function ReferralsPage() {
                     <tr key={i._id} className="border-b border-white/[0.07] last:border-0 hover:bg-white/[0.018] transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="text-[13.5px] text-txt font-medium">{i.referrer?.fullName || i.referrer?.name || '—'}</div>
-                        <div className="text-[11px] text-txt-muted mt-0.5">{i.referrer?.membership || 'Standard'} Tier</div>
+                        <div className="text-[11px] text-txt-muted mt-0.5">{i.referrer?.membership ? i.referrer?.membership + " " +'Tier' : '-'} </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="text-[13.5px] text-txt font-medium">{i.fullName || i.referredName || '—'}</div>
