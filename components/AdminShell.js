@@ -24,7 +24,7 @@ const allNavItems = [
   { icon: Settings,        label: "Settings",       href: "/admin/settings" },
 ];
 
-const trainerAllowedHrefs = ["/admin", "/admin/members", "/admin/bookings", "/admin/classes"];
+const trainerAllowedHrefs = ["/admin", "/admin/bookings", "/admin/classes"];
 
 function LogoutModal({ onConfirm, onCancel, loading }) {
   return (
