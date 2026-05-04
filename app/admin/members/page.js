@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil, Eye, X } from "lucide-react";
+import { Loader2, Pencil, Eye, X, ClipboardList, Plus, Trash2 } from "lucide-react";
 import api from "@/lib/api";
 import AdminShell from "@/components/AdminShell";
 import PageHeader from "@/components/PageHeader";
@@ -189,6 +189,253 @@ function EditModal({ member, memberships, belts, onSave, onCancel, saving }) {
   );
 }
 
+function ProgressNotesModal({ member, memberships, belts, onClose }) {
+  const studentId = member._id;
+  const memberName = member.fullName || member.name || "-";
+
+  const [notes, setNotes] = useState([]);
+  const [classTypes, setClassTypes] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ remarks: "", beltId: "", classTypeId: "", eventId: "" });
+
+  const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const loadNotes = async () => {
+    try {
+      const res = await api.get(`/progress-notes/student/${studentId}`);
+      setNotes(res.data.data || res.data || []);
+    } catch {
+      toast.error("Failed to load progress notes");
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const [notesRes, classTypesRes, eventsRes] = await Promise.all([
+          api.get(`/progress-notes/student/${studentId}`),
+          api.get("/admin/class-types"),
+          api.get("events/admin"),
+        ]);
+        setNotes(notesRes.data.data || notesRes.data || []);
+        setClassTypes(classTypesRes.data.data || []);
+        setEvents(eventsRes.data.data || []);
+      } catch {
+        toast.error("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, []);
+
+  const handleAdd = async () => {
+    if (!form.remarks.trim()) { toast.error("Remarks are required"); return; }
+    setSaving(true);
+    try {
+      const payload = { studentId, remarks: form.remarks.trim() };
+      if (form.beltId) payload.beltId = form.beltId;
+      if (form.classTypeId) payload.classTypeId = form.classTypeId;
+      if (form.eventId) payload.eventId = form.eventId;
+      await api.post("/progress-notes", payload);
+      toast.success("Progress note added");
+      setForm({ remarks: "", beltId: "", classTypeId: "", eventId: "" });
+      setShowForm(false);
+      await loadNotes();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to add note");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    setDeletingNoteId(noteId);
+    try {
+      await api.delete(`/progress-notes/${noteId}`);
+      toast.success("Note deleted");
+      await loadNotes();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete note");
+    } finally {
+      setDeletingNoteId(null);
+    }
+  };
+
+  const fmtDate = (val) => {
+    const d = new Date(val);
+    return isNaN(d) ? "-" : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }} onClick={onClose}>
+      <div className="bg-bg-card border border-white/[0.12] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-white/[0.07] flex items-center justify-between flex-shrink-0">
+          <div>
+            <h3 className="text-[15px] font-semibold text-txt">Progress Notes</h3>
+            <p className="text-[12px] text-txt-muted mt-0.5">{memberName}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowForm(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-h text-[#0a0a0a] text-[12px] font-semibold rounded-lg transition-colors"
+            >
+              <Plus size={13} />
+              Add Note
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-txt-muted hover:text-txt hover:bg-white/[0.07] transition-colors">
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* Add Note Form */}
+        {showForm && (
+          <div className="px-5 pt-4 pb-4 border-b border-white/[0.07] flex flex-col gap-3 flex-shrink-0 bg-white/[0.02]">
+            <div>
+              <label className="block text-[11px] font-semibold text-txt-muted uppercase tracking-[0.6px] mb-1.5">
+                Remarks <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <textarea
+                className={inputCls + " resize-none"}
+                rows={3}
+                value={form.remarks}
+                onChange={e => setField("remarks", e.target.value)}
+                placeholder="Enter progress remarks..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {belts.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-txt-muted uppercase tracking-[0.6px] mb-1.5">Belt</label>
+                  <select className={inputCls + " cursor-pointer"} value={form.beltId} onChange={e => setField("beltId", e.target.value)}>
+                    <option value="">— optional —</option>
+                    {belts.map(b => <option key={b._id} value={b._id} className="bg-[#1c1c1c]">{b.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {classTypes.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-txt-muted uppercase tracking-[0.6px] mb-1.5">Class Type</label>
+                  <select className={inputCls + " cursor-pointer"} value={form.classTypeId} onChange={e => setField("classTypeId", e.target.value)}>
+                    <option value="">— optional —</option>
+                    {classTypes.map(c => <option key={c._id} value={c._id} className="bg-[#1c1c1c]">{c.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {events.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-txt-muted uppercase tracking-[0.6px] mb-1.5">Event</label>
+                  <select className={inputCls + " cursor-pointer"} value={form.eventId} onChange={e => setField("eventId", e.target.value)}>
+                    <option value="">— optional —</option>
+                    {events.map(ev => <option key={ev._id} value={ev._id} className="bg-[#1c1c1c]">{ev.title}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleAdd}
+                disabled={saving}
+                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-h text-[#0a0a0a] text-[12.5px] font-semibold rounded-lg transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+              >
+                {saving ? <><Loader2 size={13} className="animate-spin" />Saving...</> : "Save Note"}
+              </button>
+              <button
+                onClick={() => { setShowForm(false); setForm({ remarks: "", beltId: "", membershipId: "", classTypeId: "", eventId: "" }); }}
+                disabled={saving}
+                className="px-4 py-2 bg-bg-hover border border-white/[0.12] text-txt text-[12.5px] font-medium rounded-lg hover:bg-bg-2 transition-colors disabled:opacity-40"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Notes List */}
+        <div className="overflow-y-auto flex-1 p-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-txt-muted text-[13px]">
+              <Loader2 size={16} className="animate-spin mr-2" /> Loading notes...
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2">
+              <ClipboardList size={32} className="text-txt-muted opacity-40" />
+              <p className="text-[13px] text-txt-muted">No progress notes yet.</p>
+              <p className="text-[12px] text-txt-muted opacity-60">Click "Add Note" to record the first entry.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {[...notes].reverse().map((note, idx) => (
+                <div key={note._id || idx} className="bg-bg-2 border border-white/[0.07] rounded-xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-[13.5px] text-txt leading-relaxed flex-1">{note.remarks}</p>
+                    {note._id && (
+                      <button
+                        onClick={() => handleDeleteNote(note._id)}
+                        disabled={deletingNoteId === note._id}
+                        className="p-1.5 rounded-lg text-txt-muted hover:text-red-400 hover:bg-red-500/[0.1] transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Delete note"
+                      >
+                        {deletingNoteId === note._id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                      </button>
+                    )}
+                  </div>
+
+                  {(note.beltId || note.classTypeId || note.eventId) && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {note.beltId && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="opacity-60">Belt:</span> {note.beltId?.name || note.beltId}
+                        </span>
+                      )}
+                      {note.classTypeId && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                          <span className="opacity-60">Class Type:</span> {note.classTypeId?.name || note.classTypeId}
+                        </span>
+                      )}
+                      {note.eventId && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="opacity-60">Event:</span> {note.eventId?.name || note.eventId}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-[11px] text-txt-muted">{fmtDate(note.createdAt || note.date)}</p>
+                    {note.authorId && (
+                      <p className="text-[11px] text-txt-muted">
+                        By <span className="text-txt-sub font-medium">{note.authorId?.fullName || note.authorId}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 pb-5 flex-shrink-0 border-t border-white/[0.07] pt-4">
+          <button onClick={onClose} className="w-full px-4 py-2.5 bg-bg-hover border border-white/[0.12] text-txt text-[13px] font-medium rounded-lg hover:bg-bg-2 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const PAGE_SIZE = 10;
 
 export default function Page() {
@@ -200,6 +447,7 @@ export default function Page() {
   const [viewTarget, setViewTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [notesTarget, setNotesTarget] = useState(null);
 
   const load = async () => {
     try {
@@ -252,6 +500,14 @@ export default function Page() {
           saving={editSaving}
         />
       )}
+      {notesTarget && (
+        <ProgressNotesModal
+          member={notesTarget}
+          memberships={memberships}
+          belts={belts}
+          onClose={() => setNotesTarget(null)}
+        />
+      )}
 
       <div className="p-8">
         <PageHeader title="Members Management" breadcrumb="Dashboard // Members" />
@@ -296,6 +552,9 @@ export default function Page() {
                           </button>
                           <button onClick={() => setEditTarget(i)} className="p-1.5 rounded-lg text-txt-muted hover:text-accent hover:bg-accent/[0.1] transition-colors" title="Edit">
                             <Pencil size={14} />
+                          </button>
+                          <button onClick={() => setNotesTarget(i)} className="p-1.5 rounded-lg text-txt-muted hover:text-accent hover:bg-accent/[0.1] transition-colors" title="Progress Notes">
+                            <ClipboardList size={14} />
                           </button>
                         </div>
                       </td>
