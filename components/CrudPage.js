@@ -31,6 +31,7 @@ function FieldInput({ f, value, onChange, errStyle }) {
         onChange={onChange}
         placeholder="HH : MM"
         errStyle={errStyle}
+        mode={f.timeMode || '24'}
       />
     );
   }

@@ -1,7 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 const ITEM_H = 36;
 const VISIBLE = 5;
@@ -97,15 +98,17 @@ function Column({ items, selected, onSelect }) {
   );
 }
 
-export default function TimeScrollPicker({ value, onChange, className, placeholder, errStyle }) {
+export default function TimeScrollPicker({ value, onChange, className, placeholder, errStyle, mode = '24' }) {
+  const HOURS = mode === '12' ? HOURS_12 : HOURS_24;
+  const defaultHour = mode === '12' ? '12' : '00';
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
   const parse = (val) => {
-    if (!val || !val.includes(':')) return { h: '00', m: '00' };
+    if (!val || !val.includes(':')) return { h: defaultHour, m: '00' };
     const [h, m] = val.split(':');
     return {
-      h: HOURS.includes(h) ? h : '00',
+      h: HOURS.includes(h) ? h : defaultHour,
       m: MINUTES.includes(m) ? m : '00',
     };
   };

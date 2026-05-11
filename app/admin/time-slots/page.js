@@ -10,7 +10,7 @@ export default function TimeslotsPage() {
         endpoint="timeslots"
         fields={[
           { name: "name", label: "Slot Name (e.g., Morning)", required: true },
-          { name: "startTime", label: "Start Time", type: "time", required: true },
+          { name: "startTime", label: "Start Time", type: "time", timeMode: "12", required: true },
           {
             name: "startPeriod",
             label: "Start AM/PM",
@@ -21,7 +21,7 @@ export default function TimeslotsPage() {
               { label: "PM", value: "PM" }
             ]
           },
-          { name: "endTime", label: "End Time", type: "time", required: true },
+          { name: "endTime", label: "End Time", type: "time", timeMode: "12", required: true },
           {
             name: "endPeriod",
             label: "End AM/PM",

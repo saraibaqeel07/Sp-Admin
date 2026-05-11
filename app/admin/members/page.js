@@ -86,8 +86,8 @@ function EditModal({ member, memberships, belts, onSave, onCancel, saving }) {
     email:         member.email || "",
     contactNumber: member.contactNumber || member.phone || "",
     gender:        member.gender || "",
-    membershipId:  member.membershipId?._id || member.membershipId || member.membership?._id || "",
-    currentBeltId: member.currentBeltId?._id || member.currentBeltId || member.beltId?._id || member.beltId || "",
+    membershipId:  member.membershipId?._id || member.membershipId || member.membership?._id || null,
+    currentBeltId: member.currentBeltId?._id || member.currentBeltId || member.beltId?._id || member.beltId || null,
     password:      "",
     role:          member.role || "CLIENT",
     isActive:      member.isActive ?? true,
@@ -99,6 +99,8 @@ function EditModal({ member, memberships, belts, onSave, onCancel, saving }) {
     if (!form.fullName?.trim()) { toast.error("Full name is required"); return; }
     const payload = { ...form };
     if (!payload.password) delete payload.password;
+    if (!payload.membershipId) payload.membershipId = null;
+    if (!payload.currentBeltId) payload.currentBeltId = null;
     onSave(payload);
   };
 
@@ -141,7 +143,7 @@ function EditModal({ member, memberships, belts, onSave, onCancel, saving }) {
           {memberships.length > 0 && (
             <div>
               <label className="block text-[12px] font-medium text-txt-sub mb-1.5">Membership</label>
-              <select className={inputCls + " cursor-pointer"} value={form.membershipId} onChange={e => setField("membershipId", e.target.value)}>
+              <select className={inputCls + " cursor-pointer"} value={form.membershipId ?? ""} onChange={e => setField("membershipId", e.target.value || null)}>
                 <option value="">Select membership</option>
                 {memberships.map(m => <option key={m._id} value={m._id} className="bg-[#1c1c1c]">{m.name}</option>)}
               </select>
@@ -151,7 +153,7 @@ function EditModal({ member, memberships, belts, onSave, onCancel, saving }) {
           {belts.length > 0 && (
             <div>
               <label className="block text-[12px] font-medium text-txt-sub mb-1.5">Belt Level</label>
-              <select className={inputCls + " cursor-pointer"} value={form.currentBeltId} onChange={e => setField("currentBeltId", e.target.value)}>
+              <select className={inputCls + " cursor-pointer"} value={form.currentBeltId ?? ""} onChange={e => setField("currentBeltId", e.target.value || null)}>
                 <option value="">Select belt</option>
                 {belts.map(b => <option key={b._id} value={b._id} className="bg-[#1c1c1c]">{b.name}</option>)}
               </select>
