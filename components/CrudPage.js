@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Plus, Loader2, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import TimeScrollPicker from './TimeScrollPicker';
+import Pagination from './Pagination';
 
 const inputCls = "w-full px-3 py-2.5 bg-bg-2 border border-white/[0.12] rounded-lg text-txt text-[13.5px] outline-none focus:border-accent transition-all placeholder:text-txt-muted";
 
@@ -151,7 +152,11 @@ function EditModal({ item, fields, onSave, onCancel, saving }) {
 }
 
 export default function CrudPage({ title, subtitle, endpoint, role, fields, columns, transformPayload }) {
-  const [items, setItems] = useState([]);
+  const [allItems, setAllItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -169,10 +174,13 @@ export default function CrudPage({ title, subtitle, endpoint, role, fields, colu
     } catch { /* ignore */ }
   }, []);
 
-  const load = async () => {
+  const load = async (p = page, ps = pageSize) => {
     try {
-      const res = await api.get(endpoint, { params: { role } });
-      setItems(res.data.data || []);
+      const res = await api.get(endpoint, { params: { role, page: p, limit: ps } });
+      setAllItems(res.data.data || []);
+      const meta = res.data.meta || {};
+      setTotal(meta.total ?? (res.data.data || []).length);
+      setTotalPages(meta.totalPages ?? 1);
     } catch {
       toast.error('Failed to load data');
     } finally {
@@ -180,7 +188,9 @@ export default function CrudPage({ title, subtitle, endpoint, role, fields, colu
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const items = allItems;
+
+  useEffect(() => { load(page, pageSize); }, [page, pageSize]);
 
   const setField = (name, value) => {
     setForm(f => ({ ...f, [name]: value }));
@@ -210,7 +220,8 @@ export default function CrudPage({ title, subtitle, endpoint, role, fields, colu
       toast.success('Saved successfully');
       setForm({});
       setErrors({});
-      load();
+      setPage(1);
+      load(1, pageSize);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to save');
     } finally {
@@ -309,7 +320,7 @@ export default function CrudPage({ title, subtitle, endpoint, role, fields, colu
         <div className="bg-bg-card border border-white/[0.07] rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-white/[0.07] flex items-center justify-between">
             <span className="text-[14px] font-semibold text-txt">Records</span>
-            <span className="text-[12px] text-txt-muted">{items.length} total</span>
+            <span className="text-[12px] text-txt-muted">{total} total</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -361,6 +372,14 @@ export default function CrudPage({ title, subtitle, endpoint, role, fields, colu
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+            total={total}
+          />
         </div>
       </div>
     </div>

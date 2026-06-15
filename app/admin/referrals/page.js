@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Gift, UserPlus } from 'lucide-react';
 import api from '@/lib/api';
 import AdminShell from '@/components/AdminShell';
+import Pagination from '@/components/Pagination';
 
 const statusBadge = (status) => {
   if (status === 'Joined')  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400">Joined</span>;
@@ -15,11 +16,18 @@ export default function ReferralsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const load = async () => {
+  const load = async (p = page, ps = pageSize) => {
     try {
-      const r = await api.get('/referrals/admin');
+      const r = await api.get('/referrals/admin', { params: { page: p, limit: ps } });
       setItems(r.data.data || []);
+      const meta = r.data.meta || {};
+      setTotal(meta.total ?? (r.data.data || []).length);
+      setTotalPages(meta.totalPages ?? 1);
     } catch {
       toast.error('Failed to load referrals');
     } finally {
@@ -27,7 +35,7 @@ export default function ReferralsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page, pageSize); }, [page, pageSize]);
 
   const complete = async (id) => {
     setCompleting(id);
@@ -109,6 +117,14 @@ export default function ReferralsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+            total={total}
+          />
         </div>
       </div>
     </AdminShell>

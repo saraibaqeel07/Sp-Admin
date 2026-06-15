@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { BookOpen, X, ClipboardEdit, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import AdminShell from '@/components/AdminShell';
+import Pagination from '@/components/Pagination';
 
 const statusBadge = (status) => {
   const map = {
@@ -122,11 +123,18 @@ export default function BookingsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [decideBooking, setDecideBooking] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const load = async () => {
+  const load = async (p = page, ps = pageSize) => {
     try {
-      const r = await api.get('admin/bookings');
+      const r = await api.get('admin/bookings', { params: { page: p, limit: ps } });
       setItems(r.data.data || []);
+      const meta = r.data.meta || {};
+      setTotal(meta.total ?? (r.data.data || []).length);
+      setTotalPages(meta.totalPages ?? 1);
     } catch {
       toast.error('Failed to load bookings');
     } finally {
@@ -134,7 +142,7 @@ export default function BookingsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page, pageSize); }, [page, pageSize]);
 
 
   return (
@@ -159,7 +167,7 @@ export default function BookingsPage() {
               <BookOpen size={15} className="text-txt-muted" />
               <span className="text-[14px] font-semibold text-txt">All Bookings</span>
             </div>
-            <span className="text-[12px] text-txt-muted">{items.length} records</span>
+            <span className="text-[12px] text-txt-muted">{total} records</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -200,6 +208,14 @@ export default function BookingsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+            total={total}
+          />
         </div>
       </div>
     </AdminShell>

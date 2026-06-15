@@ -5,6 +5,7 @@ import { Loader2, Pencil, Eye, X, ClipboardList, Plus, Trash2 } from "lucide-rea
 import api from "@/lib/api";
 import AdminShell from "@/components/AdminShell";
 import PageHeader from "@/components/PageHeader";
+import Pagination from "@/components/Pagination";
 import { Roles } from "@/lib/constants";
 
 const inputCls = "w-full px-3 py-2.5 bg-bg-2 border border-white/[0.12] rounded-lg text-txt text-[13.5px] outline-none focus:border-accent transition-all placeholder:text-txt-muted";
@@ -398,17 +399,17 @@ function ProgressNotesModal({ member, memberships, belts, onClose }) {
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {note.beltId && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          <span className="opacity-60">Belt:</span> {note.beltId?.name || note.beltId}
+                          <span className="opacity-60">Belt:</span> {note.beltId?.name || (typeof note.beltId === "string" ? note.beltId : note.beltId?._id) || ""}
                         </span>
                       )}
                       {note.classTypeId && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                          <span className="opacity-60">Class Type:</span> {note.classTypeId?.name || note.classTypeId}
+                          <span className="opacity-60">Class Type:</span> {note.classTypeId?.name || (typeof note.classTypeId === "string" ? note.classTypeId : note.classTypeId?._id) || ""}
                         </span>
                       )}
                       {note.eventId && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="opacity-60">Event:</span> {note.eventId?.name || note.eventId}
+                          <span className="opacity-60">Event:</span> {note.eventId?.title || note.eventId?.name || (typeof note.eventId === "string" ? note.eventId : note.eventId?._id) || ""}
                         </span>
                       )}
                     </div>
@@ -418,7 +419,7 @@ function ProgressNotesModal({ member, memberships, belts, onClose }) {
                     <p className="text-[11px] text-txt-muted">{fmtDate(note.createdAt || note.date)}</p>
                     {note.authorId && (
                       <p className="text-[11px] text-txt-muted">
-                        By <span className="text-txt-sub font-medium">{note.authorId?.fullName || note.authorId}</span>
+                        By <span className="text-txt-sub font-medium">{note.authorId?.fullName || note.authorId?.name || (typeof note.authorId === "string" ? note.authorId : note.authorId?._id) || ""}</span>
                       </p>
                     )}
                   </div>
@@ -438,29 +439,34 @@ function ProgressNotesModal({ member, memberships, belts, onClose }) {
   );
 }
 
-const PAGE_SIZE = 10;
-
 export default function Page() {
   const [items, setItems] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [belts, setBelts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [viewTarget, setViewTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
   const [notesTarget, setNotesTarget] = useState(null);
 
-  const load = async () => {
+  const load = async (p = page, ps = pageSize) => {
     try {
       const [usersRes, membershipsRes, beltsRes] = await Promise.all([
-        api.get("users", { params: { role: Roles.CLIENT } }),
+        api.get("users", { params: { role: Roles.CLIENT, page: p, limit: ps } }),
         api.get("/admin/membership"),
         api.get("/belts"),
       ]);
       setItems(usersRes.data.data || []);
+      const meta = usersRes.data.meta || {};
+      setTotal(meta.total ?? (usersRes.data.data || []).length);
+      setTotalPages(meta.totalPages ?? 1);
       setMemberships(membershipsRes.data.data || []);
       setBelts(Array.isArray(beltsRes.data) ? beltsRes.data : beltsRes.data.data || []);
+      return meta;
     } catch {
       toast.error("Failed to load members");
     } finally {
@@ -468,7 +474,7 @@ export default function Page() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page, pageSize); }, [page, pageSize]);
 
   const handleEdit = async (payload) => {
     setEditSaving(true);
@@ -484,8 +490,7 @@ export default function Page() {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const paged = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paged = items;
 
   return (
     <AdminShell>
@@ -568,18 +573,14 @@ export default function Page() {
           </div>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex justify-end items-center gap-1.5 mt-4">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-8 h-8 rounded-full border border-white/[0.12] text-txt-sub hover:text-txt hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center text-sm">‹</button>
-            {[...Array(totalPages)].map((_, i) => {
-              const n = i + 1;
-              return (
-                <button key={n} onClick={() => setPage(n)} className={`w-8 h-8 rounded-full text-[12px] font-medium transition-colors flex items-center justify-center ${page === n ? "bg-accent text-[#0a0a0a]" : "border border-white/[0.12] text-txt-sub hover:text-txt hover:bg-bg-hover"}`}>{n}</button>
-              );
-            })}
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="w-8 h-8 rounded-full border border-white/[0.12] text-txt-sub hover:text-txt hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center text-sm">›</button>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+          total={total}
+        />
       </div>
     </AdminShell>
   );

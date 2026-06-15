@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus, Loader2, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import api from "@/lib/api";
 import AdminShell from "@/components/AdminShell";
+import Pagination from "@/components/Pagination";
 import { Roles } from "@/lib/constants";
 
 const inputCls = "w-full px-3 py-2.5 bg-bg-2 border border-white/[0.12] rounded-lg text-txt text-[13.5px] outline-none focus:border-accent transition-all placeholder:text-txt-muted";
@@ -171,13 +172,12 @@ function EditModal({ item, types, slots, trainers, memberships, onSave, onCancel
   );
 }
 
-const PAGE_SIZE = 10;
-
 export default function Page() {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [types, setTypes] = useState([]);
   const [slots, setSlots] = useState([]);
   const [memberships, setMemberships] = useState([]);
@@ -191,19 +191,20 @@ export default function Page() {
   const [deleting, setDeleting] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
 
-  const load = async (p = page) => {
+  const load = async (p = page, ps = pageSize) => {
     try {
       setError("");
       const [classesRes, typesRes, slotsRes, membershipsRes, trainersRes] = await Promise.all([
-        api.get("/admin/slots", { params: { page: p, limit: PAGE_SIZE } }),
+        api.get("/admin/slots", { params: { page: p, limit: ps } }),
         api.get("/admin/class-types"),
         api.get("/timeslots"),
         api.get("/admin/membership"),
         api.get("/users", { params: { role: Roles.TRAINER } }),
       ]);
-      setItems(classesRes?.data?.data || []);
+      const data = classesRes?.data?.data || [];
+      setItems(data);
       const meta = classesRes?.data?.meta || {};
-      setTotal(meta.total ?? 0);
+      setTotal(meta.total ?? data.length);
       setTotalPages(meta.totalPages ?? 1);
       setTypes(typesRes?.data?.data || []);
       setSlots(slotsRes?.data?.data || []);
@@ -214,7 +215,7 @@ export default function Page() {
     }
   };
 
-  useEffect(() => { load(page); }, [page]);
+  useEffect(() => { load(page, pageSize); }, [page, pageSize]);
 
   const setField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -240,7 +241,7 @@ export default function Page() {
       setForm({ ...EMPTY_FORM });
       setErrors({});
       setPage(1);
-      await load(1);
+      await load(1, pageSize);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save class");
     } finally {
@@ -256,7 +257,7 @@ export default function Page() {
       setDeleteTarget(null);
       const newPage = items.length === 1 && page > 1 ? page - 1 : page;
       setPage(newPage);
-      await load(newPage);
+      await load(newPage, pageSize);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to delete");
     } finally {
@@ -270,7 +271,7 @@ export default function Page() {
       await api.patch(`/admin/slots/${editTarget._id}`, payload);
       toast.success("Class updated");
       setEditTarget(null);
-      await load(page);
+      await load(page, pageSize);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to update");
     } finally {
@@ -314,7 +315,7 @@ export default function Page() {
           <div className="bg-bg-card border border-white/[0.07] rounded-xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-white/[0.07] flex items-center justify-between">
               <span className="text-[14px] font-semibold text-txt">Class List</span>
-              <span className="text-[12px] text-txt-muted">{total} classes</span>
+              <span className="text-[12px] text-txt-muted">{total} total</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
@@ -352,18 +353,14 @@ export default function Page() {
                 </tbody>
               </table>
             </div>
-            {totalPages > 1 && (
-              <div className="flex justify-end items-center gap-1.5 px-5 py-3 border-t border-white/[0.07]">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-8 h-8 rounded-full border border-white/[0.12] text-txt-sub hover:text-txt hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center text-sm">‹</button>
-                {[...Array(totalPages)].map((_, i) => {
-                  const n = i + 1;
-                  return (
-                    <button key={n} onClick={() => setPage(n)} className={`w-8 h-8 rounded-full text-[12px] font-medium transition-colors flex items-center justify-center ${page === n ? "bg-accent text-[#0a0a0a]" : "border border-white/[0.12] text-txt-sub hover:text-txt hover:bg-bg-hover"}`}>{n}</button>
-                  );
-                })}
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="w-8 h-8 rounded-full border border-white/[0.12] text-txt-sub hover:text-txt hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center text-sm">›</button>
-              </div>
-            )}
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+              total={total}
+            />
           </div>
         </div>
       </div>
